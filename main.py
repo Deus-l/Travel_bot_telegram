@@ -1,42 +1,47 @@
-from bs4 import BeautifulSoup
-import requests
-import re
-import sqlite3
+import telebot
+from coordinates import get_local
+from parse_and_database import data_base
+from telebot import types
 
-def data_base(user_addres, user_time):
-    db = sqlite3.connect('map.db')
-    cursor = db.cursor()
-    for value in cursor.execute("SELECT * FROM maps"):
+token = "1637447083:AAEAqVQ1C0S0caxJYYrm5u9mNr-4FYQV-_o"
 
-            if(_parse(value[0],user_addres ) < user_time):
-                # print(value)
-                return (value)
+bot = telebot.TeleBot(token)
 
-    return 'У вас слишком мало времени'
+@bot.message_handler(commands=["start"])
+def geo(message):
+    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    button_geo = types.KeyboardButton(text="Отправить местоположение", request_location=True)
+    keyboard.row(button_geo,'/info')
+    bot.send_message(message.chat.id, "Привет! Нажми на кнопку и отправь мне свое местоположение", reply_markup=keyboard)
 
 
+@bot.message_handler(content_types=["location"])
+def location(message):
+    if message.location is not None:
+        #print(message.location)
+        bot.send_message(message.chat.id,"Теперь напиши сколько у тебя есть времени в минутах")
+        #print("latitude: %s; longitude: %s" % (message.location.latitude, message.location.longitude)
+        #bot.send_location(message.from_user.id, 59.938924, 30.315311)
 
-def _parse(user_addres,addres):
+        #start time_for_drive
+        k = bot.register_next_step_handler(message, time_for_drive)
+        global user_addres
+        user_addres = (get_local(message.location.latitude, message.location.longitude))
 
-    url = 'https://www.google.com/search?q=сколько+ехать+от+' + user_addres + '+до+' + addres
-    HEADERS = {
-        'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36'
-    }
+       # print(user_addres)
 
-    response = requests.get(url, headers=HEADERS)
-    soup = BeautifulSoup(response.content, 'html.parser')
+@bot.message_handler(commands=["info"])
+def info(message):
+    bot.send_message(message.chat.id,"Отправь мне свое место положение, напиши сколько у тебя есть времени и я найду интересные для тебя места.")
 
+def time_for_drive(message):
+    #считывание времени пользователя
     try:
-        time_drive = soup.find('span', class_='iQIYjb myy6W').get_text(strip=True)
+        user_time = int(message.text)
+        information = data_base(user_addres, user_time)
+        bot.send_message(message.chat.id,information[1])
+        bot.send_location(message.from_user.id, information[2], information[3])
     except:
-        try:
-            time_drive = soup.find('span', class_='iQIYjb ahzAec').get_text(strip=True)
-        except:
-            try:
-                time_drive = soup.find('span', class_='iQIYjb XKlQuc').get_text(strip=True)
-            except:
-                print('Error')
-    time_drive = [int(s) for s in time_drive.split() if s.isdigit()]
+        bot.send_message(message.chat.id, 'не удалось определить время поездки.')
 
-    return(time_drive[0])
-
+bot.polling()
