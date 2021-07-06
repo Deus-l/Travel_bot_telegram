@@ -8,9 +8,9 @@ def data_base(user_addres, user_time):
     cursor = db.cursor()
     for value in cursor.execute("SELECT * FROM maps"):
 
-            if(_parse(value[0],user_addres ) < user_time):
-                # print(value)
-                return (value)
+        if(_parse(value[0],user_addres ) < user_time):
+
+            return (value)
 
     return 'У вас слишком мало времени'
 
