@@ -3,7 +3,7 @@ from coordinates import get_local
 from parse_and_database import data_base
 from telebot import types
 
-token = "1637447083:AAEAqVQ1C0S0caxJYYrm5u9mNr-4FYQV-_o"
+token = "**"
 
 bot = telebot.TeleBot(token)
 
